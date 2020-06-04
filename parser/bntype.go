@@ -2,7 +2,6 @@ package parser
 
 import (
 	"errors"
-	"fmt"
 )
 
 type BnCode struct {
@@ -11,8 +10,8 @@ type BnCode struct {
 	Value interface{}
 }
 
-func (obj *BnCode) getInt() (int, error) {
-	val, ok := obj.Value.(int)
+func (obj *BnCode) getInt() (int64, error) {
+	val, ok := obj.Value.(int64)
 	if !ok {
 		return val, errors.New("Given Value is not an int")
 	}
@@ -29,8 +28,8 @@ func (obj *BnCode) getString() (string, error) {
 	return val, nil
 }
 
-func (obj *BnCode) getDict() (map[string][]BnCode, error) {
-	val, ok := obj.Value.(map[string][]BnCode)
+func (obj *BnCode) getDict() (map[string]BnCode, error) {
+	val, ok := obj.Value.(map[string]BnCode)
 	if !ok {
 		return val, errors.New("Given Value is not a dictionary")
 	}
@@ -45,8 +44,4 @@ func (obj *BnCode) getList() ([]BnCode, error) {
 	}
 
 	return val, nil
-}
-
-func (obj *BnCode) String() string {
-	return fmt.Sprintf("%v", obj.Value)
 }
