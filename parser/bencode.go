@@ -182,7 +182,7 @@ readLoop:
 			// save the key for later
 			keyStr, err := key.getString()
 			if err != nil {
-				return rc, fmt.Errorf("Unable to convert to string key", err)
+				return rc, fmt.Errorf("Unable to convert to string key, %v", err)
 			}
 
 			keys = append(keys, keyStr)
