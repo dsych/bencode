@@ -7,19 +7,19 @@ import (
 	"strconv"
 )
 
-func parseInt(reader io.ByteScanner) (BnCode, error) {
+func parseInt(reader io.ByteReader, firstChar byte) (BnCode, error) {
 	rc := BnCode{IsInt: true}
 	var buffer []byte
 
 	// check if the stream starts with the correct delimiter for char
-	b, err := reader.ReadByte()
-	if err != nil {
-		return rc, err
-	} else if b != 'i' {
-		return rc, fmt.Errorf("Unexpected character encountered. Expected %c but got %c", 'i', b)
+	if firstChar != 'i' {
+		return rc, fmt.Errorf("Unexpected character encountered. Expected %c but got %c", 'i', firstChar)
 	}
 
 	isNegative, hasZero := int64(1), false
+
+	var err error
+	var b byte
 
 readLoop:
 	for {
@@ -61,9 +61,9 @@ readLoop:
 	return rc, nil
 }
 
-func parseString(reader io.ByteScanner) (BnCode, error) {
+func parseString(reader io.ByteReader, firstChar byte) (BnCode, error) {
 	rc := BnCode{IsString: true}
-	var buffer []byte
+	var buffer []byte = []byte{firstChar}
 
 	// attemp to read the length of a string
 readLoop:
@@ -108,32 +108,28 @@ readLoop:
 	return rc, nil
 }
 
-func parseList(reader io.ByteScanner) (BnCode, error) {
+func parseList(reader io.ByteReader, firstChar byte) (BnCode, error) {
 
 	rc := BnCode{IsList: true}
 	// check if the stream starts with the correct delimiter for list
-	b, err := reader.ReadByte()
-	if err != nil {
-		return rc, err
-	} else if b != 'l' {
-		return rc, fmt.Errorf("Unexpected character encountered. Expected %c but got %c", 'l', b)
+	if firstChar != 'l' {
+		return rc, fmt.Errorf("Unexpected character encountered. Expected %c but got %c", 'l', firstChar)
 	}
 
 	var tmpList []BnCode
+	var err error
+	var b byte
 
 readLoop:
 	for {
 		if b, err = reader.ReadByte(); err != nil {
 			return rc, err
 		} // we want to return the read byte, to allow parsing methods to perform a full string scan
-		if err := reader.UnreadByte(); err != nil {
-			return BnCode{}, err
-		}
 		switch b {
 		case 'e':
 			break readLoop
 		default:
-			if t, err := Decode(reader); err == nil {
+			if t, err := decode(reader, b); err == nil {
 				tmpList = append(tmpList, t)
 			}
 		}
@@ -142,33 +138,30 @@ readLoop:
 	return rc, nil
 }
 
-func parseDict(reader io.ByteScanner) (BnCode, error) {
+func parseDict(reader io.ByteReader, firstChar byte) (BnCode, error) {
 	var keys []string
 	cache := make(map[string]BnCode)
 
 	rc := BnCode{IsDict: true}
 	// check if the stream starts with the correct delimiter for dict
-	b, err := reader.ReadByte()
-	if err != nil {
-		return rc, err
-	} else if b != 'd' {
-		return rc, fmt.Errorf("Unexpected character encountered. Expected %c but got %c", 'd', b)
+	if firstChar != 'd' {
+		return rc, fmt.Errorf("Unexpected character encountered. Expected %c but got %c", 'd', firstChar)
 	}
+
+	var b byte
+	var err error
 
 readLoop:
 	for {
 		if b, err = reader.ReadByte(); err != nil {
 			return rc, err
 		} // we want to return the read byte, to allow parsing methods to perform a full string scan
-		if err := reader.UnreadByte(); err != nil {
-			return BnCode{}, err
-		}
 		switch b {
 		case 'e':
 			break readLoop
 		default:
 			// read the key first, it is always expected to be a string
-			key, err := parseString(reader)
+			key, err := parseString(reader, b)
 			if err != nil {
 				return rc, err
 			}
@@ -205,46 +198,47 @@ readLoop:
 	return rc, nil
 }
 
-func Decode(reader io.ByteScanner) (BnCode, error) {
-	var rc BnCode
+func Decode(reader io.ByteReader) (BnCode, error) {
 	if b, err := reader.ReadByte(); err != nil {
 		return BnCode{}, err
 	} else {
-		// we want to return the read byte, to allow parsing methods to perform a full string scan
-		if err := reader.UnreadByte(); err != nil {
+		return decode(reader, b)
+	}
+}
+
+func decode(reader io.ByteReader, firstChar byte) (BnCode, error) {
+	var rc BnCode
+	b := firstChar
+
+	switch b {
+	// found an int
+	case 'i':
+		if obj, err := parseInt(reader, b); err == nil {
+			// append the result of the int parsing to the original slice
+			rc = obj
+		} else {
 			return BnCode{}, err
 		}
-
-		switch b {
-		// found an int
-		case 'i':
-			if obj, err := parseInt(reader); err == nil {
-				// append the result of the int parsing to the original slice
-				rc = obj
-			} else {
-				return BnCode{}, err
-			}
-		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			if obj, err := parseString(reader); err == nil {
-				// append the result of the int parsing to the original slice
-				rc = obj
-			} else {
-				return BnCode{}, err
-			}
-		case 'l':
-			if obj, err := parseList(reader); err == nil {
-				// append the result of the int parsing to the original slice
-				rc = obj
-			} else {
-				return BnCode{}, err
-			}
-		case 'd':
-			if obj, err := parseDict(reader); err == nil {
-				// append the result of the int parsing to the original slice
-				rc = obj
-			} else {
-				return BnCode{}, err
-			}
+	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		if obj, err := parseString(reader, b); err == nil {
+			// append the result of the int parsing to the original slice
+			rc = obj
+		} else {
+			return BnCode{}, err
+		}
+	case 'l':
+		if obj, err := parseList(reader, b); err == nil {
+			// append the result of the int parsing to the original slice
+			rc = obj
+		} else {
+			return BnCode{}, err
+		}
+	case 'd':
+		if obj, err := parseDict(reader, b); err == nil {
+			// append the result of the int parsing to the original slice
+			rc = obj
+		} else {
+			return BnCode{}, err
 		}
 	}
 

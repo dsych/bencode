@@ -7,10 +7,10 @@ import (
 )
 
 func TestStringParserPositive(t *testing.T) {
-	inputStr := "3:foo"
+	inputStr := ":foo"
 	input := []byte(inputStr)
 
-	output, err := parseString(bytes.NewReader(input))
+	output, err := parseString(bytes.NewReader(input), '3')
 
 	if err != nil {
 		t.Errorf("Unable to parse correct string, %v", err)
@@ -29,10 +29,10 @@ func TestStringParserPositive(t *testing.T) {
 }
 
 func TestIntParsePositive(t *testing.T) {
-	inputStr := "i-123456e"
+	inputStr := "-123456e"
 	input := []byte(inputStr)
 
-	output, err := parseInt(bytes.NewReader(input))
+	output, err := parseInt(bytes.NewReader(input), 'i')
 
 	if err != nil {
 		t.Errorf("Unable to parse correct int, %v", err)
@@ -50,10 +50,10 @@ func TestIntParsePositive(t *testing.T) {
 }
 
 func TestParseListPositive(t *testing.T) {
-	inputStr := "li42e3:fooe"
+	inputStr := "i42e3:fooe"
 	input := []byte(inputStr)
 
-	output, err := parseList(bytes.NewReader(input))
+	output, err := parseList(bytes.NewReader(input), 'l')
 
 	if err != nil {
 		t.Errorf("Unable to parse correct list, %v", err)
@@ -63,14 +63,14 @@ func TestParseListPositive(t *testing.T) {
 
 	v, err := output.getList()
 	if err != nil || len(v) != 2 {
-		t.Errorf("Unable to parse correct list. %v", err)
+		t.Errorf("Unable to parse correct list. Got %v, with error %v", v, err)
 	}
 
 }
 
 func TestDictParsePositive(t *testing.T) {
-	input := []byte("d5:helloi-3e4:spam3:foo3:zooli42e3:fooee")
-	output, err := parseDict(bytes.NewReader(input))
+	input := []byte("5:helloi-3e4:spam3:foo3:zooli42e3:fooee")
+	output, err := parseDict(bytes.NewReader(input), 'd')
 
 	if err != nil {
 		t.Errorf("Unable to parse correct dict, %v", err)
