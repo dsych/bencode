@@ -16,7 +16,7 @@ func parseInt(reader io.ByteReader, firstChar byte) (BnCode, error) {
 		return rc, fmt.Errorf("Unexpected character encountered. Expected %c but got %c", 'i', firstChar)
 	}
 
-	isNegative, hasZero := int64(1), false
+	isNegative, hasZero := int(1), false
 
 	var err error
 	var b byte
@@ -57,7 +57,7 @@ readLoop:
 	}
 
 	// done processing, make sure to apply the sign correctly
-	rc.Value = int64(tmp) * isNegative
+	rc.Value = int(tmp) * isNegative
 	return rc, nil
 }
 

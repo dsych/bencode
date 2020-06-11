@@ -41,7 +41,7 @@ func TestIntParsePositive(t *testing.T) {
 	}
 
 	v, err := output.getInt()
-	expected := int64(-123456)
+	expected := int(-123456)
 	if err != nil {
 		t.Errorf("Unable to parse correct int. %v", err)
 	} else if v != expected {

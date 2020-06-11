@@ -10,8 +10,8 @@ type BnCode struct {
 	Value interface{}
 }
 
-func (obj *BnCode) getInt() (int64, error) {
-	val, ok := obj.Value.(int64)
+func (obj *BnCode) getInt() (int, error) {
+	val, ok := obj.Value.(int)
 	if !ok {
 		return val, errors.New("Given Value is not an int")
 	}
