@@ -82,8 +82,10 @@ func flattenDict(src BnCode, dest io.ByteWriter) error {
 	// we collect and sort the keys first and then iterate over
 	// the sorted keys encoding them in the correct order
 	keys := make([]string, len(val))
+	i := 0
 	for key := range val {
-		keys = append(keys, key)
+		keys[i] = key
+		i++
 	}
 	sort.Strings(keys)
 
@@ -93,8 +95,6 @@ func flattenDict(src BnCode, dest io.ByteWriter) error {
 		// encode the key by creating a tmp wrapper object
 		tmp := BnCode{IsString: true, Value: key}
 		flattenString(tmp, dest)
-		// inset the separator
-		dest.WriteByte(':')
 		// insert the actual value
 		if err := Encode(v, dest); err != nil {
 			return err
