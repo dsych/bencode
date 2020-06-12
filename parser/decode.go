@@ -198,14 +198,6 @@ readLoop:
 	return rc, nil
 }
 
-func Decode(reader io.ByteReader) (BnCode, error) {
-	if b, err := reader.ReadByte(); err != nil {
-		return BnCode{}, err
-	} else {
-		return decode(reader, b)
-	}
-}
-
 func decode(reader io.ByteReader, firstChar byte) (BnCode, error) {
 	var rc BnCode
 	b := firstChar
@@ -243,4 +235,17 @@ func decode(reader io.ByteReader, firstChar byte) (BnCode, error) {
 	}
 
 	return rc, nil
+}
+
+// Decode attempts to parse the incoming byte stream according to Bencode rules.
+// Decodes the first encountered node, all subsequent nodes could be decoded with subsequent calls
+// to this method.
+//
+// See more details https://en.wikipedia.org/wiki/Bencode
+func Decode(reader io.ByteReader) (BnCode, error) {
+	if b, err := reader.ReadByte(); err != nil {
+		return BnCode{}, err
+	} else {
+		return decode(reader, b)
+	}
 }

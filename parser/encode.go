@@ -105,6 +105,11 @@ func flattenDict(src BnCode, dest io.ByteWriter) error {
 	return nil
 }
 
+// Encode attempts to flatten the src BnCode object into dest stream.
+// If error is encountered, the dest is left with whatever was flattened before the error.
+// Hence, it is caller's job to clean it up.
+//
+// Follows rules described here: https://en.wikipedia.org/wiki/Bencode
 func Encode(src BnCode, dest io.ByteWriter) error {
 	var err error = nil
 	switch src.State {
