@@ -16,18 +16,26 @@ const (
 )
 
 // BnCode is structure that wraps main Bencode types :
+//
 // 1. int - constant BnInt
+//
 // 2. string - constant BnString
+//
 // 3. list - constatnt BnList
+//
 // 4. dictionary - constant BnDict
+//
 // Each of the types have corresponding code that will show the current Value state,
-// hence you can only call geInt method on the BnCode, which State is set to BnInt
+// hence you can only call geInt method on the BnCode, which State is set to BnInt.
 type BnCode struct {
 	State int
 	Value interface{}
 }
 
-func (obj *BnCode) getInt() (int, error) {
+// GetInt tries converting Value to int.
+//
+// Returns error if unable to cast to int or State is not BnInt.
+func (obj *BnCode) GetInt() (int, error) {
 	if val, ok := obj.Value.(int); obj.State != BnInt || !ok {
 		return val, errors.New("Given Value is not an int")
 	} else {
@@ -35,7 +43,10 @@ func (obj *BnCode) getInt() (int, error) {
 	}
 }
 
-func (obj *BnCode) getString() (string, error) {
+// GetString tries converting Value to string.
+//
+// Returns error if unable to cast to string or State is not BnString.
+func (obj *BnCode) GetString() (string, error) {
 	if val, ok := obj.Value.(string); obj.State != BnString || !ok {
 		return val, errors.New("Given Value is not an string")
 	} else {
@@ -43,7 +54,10 @@ func (obj *BnCode) getString() (string, error) {
 	}
 }
 
-func (obj *BnCode) getDict() (map[string]BnCode, error) {
+// GetDict tries converting Value to dictionary
+//
+// Returns error if unable to cast to dictionary or State is not BnDict
+func (obj *BnCode) GetDict() (map[string]BnCode, error) {
 	if val, ok := obj.Value.(map[string]BnCode); obj.State != BnDict || !ok {
 		return val, errors.New("Given Value is not a dictionary")
 	} else {
@@ -51,7 +65,10 @@ func (obj *BnCode) getDict() (map[string]BnCode, error) {
 	}
 }
 
-func (obj *BnCode) getList() ([]BnCode, error) {
+// GetList tries converting Value to list
+//
+// Returns error if unable to cast to list or State is not BnList
+func (obj *BnCode) GetList() ([]BnCode, error) {
 
 	if val, ok := obj.Value.([]BnCode); obj.State != BnList || !ok {
 		return val, errors.New("Given Value is not a list")

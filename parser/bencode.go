@@ -173,7 +173,7 @@ readLoop:
 			}
 
 			// save the key for later
-			keyStr, err := key.getString()
+			keyStr, err := key.GetString()
 			if err != nil {
 				return rc, fmt.Errorf("Unable to convert to string key, %v", err)
 			}

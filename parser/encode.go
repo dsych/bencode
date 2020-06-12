@@ -12,7 +12,7 @@ func flattenInt(src BnCode, dest io.ByteWriter) error {
 		return fmt.Errorf("Source object does not hold an int value")
 	}
 
-	val, err := src.getInt()
+	val, err := src.GetInt()
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func flattenString(src BnCode, dest io.ByteWriter) error {
 		return fmt.Errorf("Source object does not hold a string value")
 	}
 
-	val, err := src.getString()
+	val, err := src.GetString()
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func flattenList(src BnCode, dest io.ByteWriter) error {
 		return fmt.Errorf("Source object does not hold a list value")
 	}
 
-	val, err := src.getList()
+	val, err := src.GetList()
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func flattenDict(src BnCode, dest io.ByteWriter) error {
 		return fmt.Errorf("Source object does not hold a dictionary")
 	}
 
-	val, err := src.getDict()
+	val, err := src.GetDict()
 	if err != nil {
 		return err
 	}
