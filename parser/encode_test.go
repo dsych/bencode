@@ -8,7 +8,7 @@ import (
 
 func TestStringFlattenPositive(t *testing.T) {
 	targetVal := "foo"
-	obj := BnCode{IsString: true, Value: targetVal}
+	obj := BnCode{State: BnString, Value: targetVal}
 	writer := bytes.NewBuffer([]byte{})
 
 	err := flattenString(obj, writer)
@@ -28,7 +28,7 @@ func TestStringFlattenPositive(t *testing.T) {
 
 func TestIntFlattenPositive(t *testing.T) {
 	targetVal := -42
-	obj := BnCode{IsInt: true, Value: targetVal}
+	obj := BnCode{State: BnInt, Value: targetVal}
 	writer := bytes.NewBuffer([]byte{})
 
 	err := flattenInt(obj, writer)
@@ -46,7 +46,7 @@ func TestIntFlattenPositive(t *testing.T) {
 }
 
 func TestListFlattenPositive(t *testing.T) {
-	obj := BnCode{IsList: true, Value: []BnCode{{IsInt: true, Value: 4}, {IsString: true, Value: "abc"}}}
+	obj := BnCode{State: BnList, Value: []BnCode{{State: BnInt, Value: 4}, {State: BnString, Value: "abc"}}}
 	writer := bytes.NewBuffer([]byte{})
 
 	err := flattenList(obj, writer)
@@ -64,7 +64,7 @@ func TestListFlattenPositive(t *testing.T) {
 }
 
 func TestDictFlattenPositive(t *testing.T) {
-	obj := BnCode{IsDict: true, Value: map[string]BnCode{"a": {IsInt: true, Value: 4}, "b": {IsString: true, Value: "abc"}, "list": {IsList: true, Value: []BnCode{{IsInt: true, Value: 5}}}}}
+	obj := BnCode{State: BnDict, Value: map[string]BnCode{"a": {State: BnInt, Value: 4}, "b": {State: BnString, Value: "abc"}, "list": {State: BnList, Value: []BnCode{{State: BnInt, Value: 5}}}}}
 
 	writer := bytes.NewBuffer([]byte{})
 

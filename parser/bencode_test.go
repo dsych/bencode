@@ -14,7 +14,7 @@ func TestStringParserPositive(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Unable to parse correct string, %v", err)
-	} else if !output.IsString || (output.IsInt || output.IsDict || output.IsList) {
+	} else if output.State != BnString {
 		t.Errorf("Incorrect flags are set")
 	}
 
@@ -36,7 +36,7 @@ func TestIntParsePositive(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Unable to parse correct int, %v", err)
-	} else if !output.IsInt || (output.IsString || output.IsDict || output.IsList) {
+	} else if output.State != BnInt {
 		t.Errorf("Incorrect flags are set")
 	}
 
@@ -57,7 +57,7 @@ func TestParseListPositive(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Unable to parse correct list, %v", err)
-	} else if !output.IsList || (output.IsString || output.IsDict || output.IsInt) {
+	} else if output.State != BnList {
 		t.Errorf("Incorrect flags are set")
 	}
 
@@ -74,7 +74,7 @@ func TestDictParsePositive(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Unable to parse correct dict, %v", err)
-	} else if !output.IsDict || (output.IsString || output.IsList || output.IsInt) {
+	} else if output.State != BnDict {
 		t.Errorf("Incorrect flags are set")
 	}
 

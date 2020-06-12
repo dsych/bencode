@@ -8,7 +8,7 @@ import (
 )
 
 func flattenInt(src BnCode, dest io.ByteWriter) error {
-	if !src.IsInt {
+	if src.State != BnInt {
 		return fmt.Errorf("Source object does not hold an int value")
 	}
 
@@ -27,7 +27,7 @@ func flattenInt(src BnCode, dest io.ByteWriter) error {
 }
 
 func flattenString(src BnCode, dest io.ByteWriter) error {
-	if !src.IsString {
+	if src.State != BnString {
 		return fmt.Errorf("Source object does not hold a string value")
 	}
 
@@ -47,7 +47,7 @@ func flattenString(src BnCode, dest io.ByteWriter) error {
 }
 
 func flattenList(src BnCode, dest io.ByteWriter) error {
-	if !src.IsList {
+	if src.State != BnList {
 		return fmt.Errorf("Source object does not hold a list value")
 	}
 
@@ -69,7 +69,7 @@ func flattenList(src BnCode, dest io.ByteWriter) error {
 }
 
 func flattenDict(src BnCode, dest io.ByteWriter) error {
-	if !src.IsDict {
+	if src.State != BnDict {
 		return fmt.Errorf("Source object does not hold a dictionary")
 	}
 
@@ -93,7 +93,7 @@ func flattenDict(src BnCode, dest io.ByteWriter) error {
 	for _, key := range keys {
 		v := val[key]
 		// encode the key by creating a tmp wrapper object
-		tmp := BnCode{IsString: true, Value: key}
+		tmp := BnCode{State: BnString, Value: key}
 		flattenString(tmp, dest)
 		// insert the actual value
 		if err := Encode(v, dest); err != nil {
@@ -107,16 +107,16 @@ func flattenDict(src BnCode, dest io.ByteWriter) error {
 
 func Encode(src BnCode, dest io.ByteWriter) error {
 	var err error = nil
-
-	if src.IsInt {
+	switch src.State {
+	case BnInt:
 		err = flattenInt(src, dest)
-	} else if src.IsString {
+	case BnString:
 		err = flattenString(src, dest)
-	} else if src.IsList {
+	case BnList:
 		err = flattenList(src, dest)
-	} else if src.IsDict {
+	case BnDict:
 		err = flattenDict(src, dest)
-	} else {
+	default:
 		err = fmt.Errorf("Unknown type encountered")
 	}
 	return err

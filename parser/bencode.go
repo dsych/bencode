@@ -8,7 +8,7 @@ import (
 )
 
 func parseInt(reader io.ByteReader, firstChar byte) (BnCode, error) {
-	rc := BnCode{IsInt: true}
+	rc := BnCode{State: BnInt}
 	var buffer []byte
 
 	// check if the stream starts with the correct delimiter for char
@@ -62,7 +62,7 @@ readLoop:
 }
 
 func parseString(reader io.ByteReader, firstChar byte) (BnCode, error) {
-	rc := BnCode{IsString: true}
+	rc := BnCode{State: BnString}
 	var buffer []byte = []byte{firstChar}
 
 	// attemp to read the length of a string
@@ -110,7 +110,7 @@ readLoop:
 
 func parseList(reader io.ByteReader, firstChar byte) (BnCode, error) {
 
-	rc := BnCode{IsList: true}
+	rc := BnCode{State: BnList}
 	// check if the stream starts with the correct delimiter for list
 	if firstChar != 'l' {
 		return rc, fmt.Errorf("Unexpected character encountered. Expected %c but got %c", 'l', firstChar)
@@ -142,7 +142,7 @@ func parseDict(reader io.ByteReader, firstChar byte) (BnCode, error) {
 	var keys []string
 	cache := make(map[string]BnCode)
 
-	rc := BnCode{IsDict: true}
+	rc := BnCode{State: BnDict}
 	// check if the stream starts with the correct delimiter for dict
 	if firstChar != 'd' {
 		return rc, fmt.Errorf("Unexpected character encountered. Expected %c but got %c", 'd', firstChar)
