@@ -2,84 +2,192 @@ package parser
 
 import (
 	"bytes"
-	"strings"
+	"io"
+	"reflect"
 	"testing"
 )
 
-func TestStringParserPositive(t *testing.T) {
-	inputStr := ":foo"
-	input := []byte(inputStr)
-
-	output, err := parseString(bytes.NewReader(input), '3')
-
-	if err != nil {
-		t.Errorf("Unable to parse correct string, %v", err)
-	} else if output.State != BnString {
-		t.Errorf("Incorrect flags are set")
+func Test_parseInt(t *testing.T) {
+	type args struct {
+		reader    io.ByteReader
+		firstChar byte
 	}
-
-	v, err := output.GetString()
-
-	if err != nil {
-		t.Errorf("Unable to parse correct string. %v", err)
-	} else if expected := strings.SplitAfter(inputStr, ":")[1]; v != expected {
-		t.Errorf("Incorrectly parsed the string, expected %s got %s", expected, v)
+	tests := []struct {
+		name    string
+		args    args
+		want    BnCode
+		wantErr bool
+	}{
+		{
+			name:    "Positive test case",
+			args:    args{reader: bytes.NewReader([]byte("-123456e")), firstChar: 'i'},
+			want:    BnCode{State: BnInt, Value: int(-123456)},
+			wantErr: false,
+		},
 	}
-
-}
-
-func TestIntParsePositive(t *testing.T) {
-	inputStr := "-123456e"
-	input := []byte(inputStr)
-
-	output, err := parseInt(bytes.NewReader(input), 'i')
-
-	if err != nil {
-		t.Errorf("Unable to parse correct int, %v", err)
-	} else if output.State != BnInt {
-		t.Errorf("Incorrect flags are set")
-	}
-
-	v, err := output.GetInt()
-	expected := int(-123456)
-	if err != nil {
-		t.Errorf("Unable to parse correct int. %v", err)
-	} else if v != expected {
-		t.Errorf("Incorrectly parsed the string, expected %d got %d", expected, v)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseInt(tt.args.reader, tt.args.firstChar)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseInt() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseInt() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
-func TestParseListPositive(t *testing.T) {
-	inputStr := "i42e3:fooe"
-	input := []byte(inputStr)
-
-	output, err := parseList(bytes.NewReader(input), 'l')
-
-	if err != nil {
-		t.Errorf("Unable to parse correct list, %v", err)
-	} else if output.State != BnList {
-		t.Errorf("Incorrect flags are set")
+func Test_parseString(t *testing.T) {
+	type args struct {
+		reader    io.ByteReader
+		firstChar byte
 	}
-
-	v, err := output.GetList()
-	if err != nil || len(v) != 2 {
-		t.Errorf("Unable to parse correct list. Got %v, with error %v", v, err)
+	tests := []struct {
+		name    string
+		args    args
+		want    BnCode
+		wantErr bool
+	}{
+		{
+			name:    "Positive test case",
+			args:    args{reader: bytes.NewReader([]byte(":foo")), firstChar: '3'},
+			want:    BnCode{State: BnString, Value: "foo"},
+			wantErr: false,
+		},
 	}
-
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseString(tt.args.reader, tt.args.firstChar)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseString() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
-func TestDictParsePositive(t *testing.T) {
-	input := []byte("5:helloi-3e4:spam3:foo3:zooli42e3:fooee")
-	output, err := parseDict(bytes.NewReader(input), 'd')
-
-	if err != nil {
-		t.Errorf("Unable to parse correct dict, %v", err)
-	} else if output.State != BnDict {
-		t.Errorf("Incorrect flags are set")
+func Test_parseDict(t *testing.T) {
+	type args struct {
+		reader    io.ByteReader
+		firstChar byte
 	}
+	tests := []struct {
+		name    string
+		args    args
+		want    BnCode
+		wantErr bool
+	}{
+		{
+			name: "Positive test case",
+			args: args{reader: bytes.NewReader([]byte("5:helloi-3e4:spam3:foo3:zooli42e3:fooee")), firstChar: 'd'},
+			want: BnCode{State: BnDict, Value: map[string]BnCode{
+				"hello": {State: BnInt, Value: -3},
+				"spam":  {State: BnString, Value: "foo"},
+				"zoo":   {State: BnList, Value: []BnCode{{State: BnInt, Value: 42}, {State: BnString, Value: "foo"}}},
+			}},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseDict(tt.args.reader, tt.args.firstChar)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseDict() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseDict() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
-	v, err := output.GetDict()
-	if err != nil || len(v) != 3 {
-		t.Errorf("Unable to parse correct dict. %v, Error: %v", v, err)
+func Test_parseList(t *testing.T) {
+	type args struct {
+		reader    io.ByteReader
+		firstChar byte
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    BnCode
+		wantErr bool
+	}{
+		{
+			name:    "Positive test case",
+			args:    args{reader: bytes.NewReader([]byte("i42e3:fooe")), firstChar: 'l'},
+			want:    BnCode{State: BnList, Value: []BnCode{{State: BnInt, Value: 42}, {State: BnString, Value: "foo"}}},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseList(tt.args.reader, tt.args.firstChar)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseList() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseList() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_decode(t *testing.T) {
+	type args struct {
+		reader    io.ByteReader
+		firstChar byte
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    BnCode
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := decode(tt.args.reader, tt.args.firstChar)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("decode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("decode() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDecode(t *testing.T) {
+	type args struct {
+		reader io.ByteReader
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    BnCode
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Decode(tt.args.reader)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Decode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Decode() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
