@@ -63,25 +63,28 @@ readLoop:
 
 func parseString(reader io.ByteReader, firstChar byte) (BnCode, error) {
 	rc := BnCode{State: BnString}
+	if firstChar < '0' || firstChar > '9' {
+		return rc, fmt.Errorf("Unexpected character in length")
+	}
+
 	var buffer []byte = []byte{firstChar}
+	var b byte
+	var err error
 
 	// attemp to read the length of a string
 readLoop:
 	for {
-		if b, err := reader.ReadByte(); err == io.EOF {
-			break
-		} else if err != nil {
+		if b, err = reader.ReadByte(); err != nil {
 			return rc, err
-		} else {
-			switch b {
-			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-				buffer = append(buffer, b)
-			case ':': // delimiter character that divides the length of the string and the actual value
-				break readLoop
-			default:
-				// unexpected character seen, stop
-				return rc, fmt.Errorf("Unexpected character '%c' encountered while parse string", b)
-			}
+		}
+		switch b {
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+			buffer = append(buffer, b)
+		case ':': // delimiter character that divides the length of the string and the actual value
+			break readLoop
+		default:
+			// unexpected character seen, stop
+			return rc, fmt.Errorf("Unexpected character '%c' encountered while parse string", b)
 		}
 	}
 	// get the length of the string
@@ -94,13 +97,10 @@ readLoop:
 
 	// iterate over the entire string. throw if the length is less than the state length
 	for i := 0; i < length; i++ {
-		if b, err := reader.ReadByte(); err == io.EOF {
-			return rc, fmt.Errorf("String length is shorter than expected. Expected %d got %d", length, i)
-		} else if err != nil {
+		if b, err = reader.ReadByte(); err != nil {
 			return rc, err
-		} else {
-			buffer = append(buffer, b)
 		}
+		buffer = append(buffer, b)
 	}
 
 	// done parsing, record the string value
@@ -116,7 +116,7 @@ func parseList(reader io.ByteReader, firstChar byte) (BnCode, error) {
 		return rc, fmt.Errorf("Unexpected character encountered. Expected %c but got %c", 'l', firstChar)
 	}
 
-	var tmpList []BnCode
+	var tmpList []BnCode = make([]BnCode, 0)
 	var err error
 	var b byte
 

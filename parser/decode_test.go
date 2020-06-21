@@ -24,6 +24,42 @@ func Test_parseInt(t *testing.T) {
 			want:    BnCode{State: BnInt, Value: int(-123456)},
 			wantErr: false,
 		},
+		{
+			name:    "Empty int",
+			args:    args{reader: bytes.NewReader([]byte("e")), firstChar: 'i'},
+			want:    BnCode{State: BnInt},
+			wantErr: true,
+		},
+		{
+			name:    "Invalid first charater",
+			args:    args{reader: bytes.NewReader([]byte("-123456e")), firstChar: ' '},
+			want:    BnCode{},
+			wantErr: true,
+		},
+		{
+			name:    "Terminated stream",
+			args:    args{reader: bytes.NewReader([]byte("")), firstChar: 'i'},
+			want:    BnCode{},
+			wantErr: true,
+		},
+		{
+			name:    "Invalid character inside the stream",
+			args:    args{reader: bytes.NewReader([]byte("ae")), firstChar: 'i'},
+			want:    BnCode{},
+			wantErr: true,
+		},
+		{
+			name:    "Multiple zeros",
+			args:    args{reader: bytes.NewReader([]byte("00e")), firstChar: 'i'},
+			want:    BnCode{},
+			wantErr: true,
+		},
+		{
+			name:    "Negative zero",
+			args:    args{reader: bytes.NewReader([]byte("-0e")), firstChar: 'i'},
+			want:    BnCode{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -52,9 +88,45 @@ func Test_parseString(t *testing.T) {
 	}{
 		{
 			name:    "Positive test case",
-			args:    args{reader: bytes.NewReader([]byte(":foo")), firstChar: '3'},
-			want:    BnCode{State: BnString, Value: "foo"},
+			args:    args{reader: bytes.NewReader([]byte("1:foooooooooo")), firstChar: '1'},
+			want:    BnCode{State: BnString, Value: "foooooooooo"},
 			wantErr: false,
+		},
+		{
+			name:    "Empty string",
+			args:    args{reader: bytes.NewReader([]byte(":")), firstChar: '0'},
+			want:    BnCode{State: BnString, Value: ""},
+			wantErr: false,
+		},
+		{
+			name:    "Invalid chars in length",
+			args:    args{reader: bytes.NewReader([]byte(":foo")), firstChar: 'd'},
+			want:    BnCode{State: BnString},
+			wantErr: true,
+		},
+		{
+			name:    "No length, terminator right away",
+			args:    args{reader: bytes.NewReader([]byte("foo")), firstChar: ':'},
+			want:    BnCode{State: BnString},
+			wantErr: true,
+		},
+		{
+			name:    "Empty stream",
+			args:    args{reader: bytes.NewReader([]byte("")), firstChar: '3'},
+			want:    BnCode{State: BnString},
+			wantErr: true,
+		},
+		{
+			name:    "No separator",
+			args:    args{reader: bytes.NewReader([]byte("foo")), firstChar: '3'},
+			want:    BnCode{State: BnString},
+			wantErr: true,
+		},
+		{
+			name:    "Empty string with non-zero length",
+			args:    args{reader: bytes.NewReader([]byte(":")), firstChar: '3'},
+			want:    BnCode{State: BnString},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -92,6 +164,36 @@ func Test_parseDict(t *testing.T) {
 			}},
 			wantErr: false,
 		},
+		{
+			name:    "Empty dictionary",
+			args:    args{reader: bytes.NewReader([]byte("e")), firstChar: 'd'},
+			want:    BnCode{State: BnDict, Value: map[string]BnCode{}},
+			wantErr: false,
+		},
+		{
+			name:    "Positive test case",
+			args:    args{reader: bytes.NewReader([]byte("")), firstChar: ' '},
+			want:    BnCode{State: BnDict},
+			wantErr: true,
+		},
+		{
+			name:    "Empty buffer",
+			args:    args{reader: bytes.NewReader([]byte("")), firstChar: 'd'},
+			want:    BnCode{State: BnDict},
+			wantErr: true,
+		},
+		{
+			name:    "Key without a value",
+			args:    args{reader: bytes.NewReader([]byte("5:hello")), firstChar: 'd'},
+			want:    BnCode{State: BnDict},
+			wantErr: true,
+		},
+		{
+			name:    "Wrong sequence of keys",
+			args:    args{reader: bytes.NewReader([]byte("4:spam3:foo5:helloi-3ee")), firstChar: 'd'},
+			want:    BnCode{State: BnDict},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -123,6 +225,24 @@ func Test_parseList(t *testing.T) {
 			args:    args{reader: bytes.NewReader([]byte("i42e3:fooe")), firstChar: 'l'},
 			want:    BnCode{State: BnList, Value: []BnCode{{State: BnInt, Value: 42}, {State: BnString, Value: "foo"}}},
 			wantErr: false,
+		},
+		{
+			name:    "Empty List",
+			args:    args{reader: bytes.NewReader([]byte("e")), firstChar: 'l'},
+			want:    BnCode{State: BnList, Value: []BnCode{}},
+			wantErr: false,
+		},
+		{
+			name:    "Invalid first character",
+			args:    args{reader: bytes.NewReader([]byte("i42e3:fooe")), firstChar: ' '},
+			want:    BnCode{State: BnList},
+			wantErr: true,
+		},
+		{
+			name:    "Empty stream",
+			args:    args{reader: bytes.NewReader([]byte("")), firstChar: 'l'},
+			want:    BnCode{State: BnList},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
