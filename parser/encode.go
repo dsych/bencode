@@ -2,80 +2,82 @@ package parser
 
 import (
 	"fmt"
-	"io"
 	"sort"
 	"strconv"
 )
 
-func flattenInt(src BnCode, dest io.ByteWriter) error {
+func flattenInt(src BnCode) ([]byte, error) {
+	rc := []byte{}
 	if src.State != BnInt {
-		return fmt.Errorf("Source object does not hold an int value")
+		return rc, fmt.Errorf("Source object does not hold an int value")
 	}
 
 	val, err := src.GetInt()
 	if err != nil {
-		return err
+		return rc, err
 	}
 
-	dest.WriteByte('i')
+	rc = append(rc, 'i')
 	for _, v := range []byte(strconv.Itoa(val)) {
-		dest.WriteByte(v)
+		rc = append(rc, v)
 	}
-	dest.WriteByte('e')
+	rc = append(rc, 'e')
 
-	return nil
+	return rc, nil
 }
 
-func flattenString(src BnCode, dest io.ByteWriter) error {
+func flattenString(src BnCode) ([]byte, error) {
+	rc := []byte{}
 	if src.State != BnString {
-		return fmt.Errorf("Source object does not hold a string value")
+		return rc, fmt.Errorf("Source object does not hold a string value")
 	}
 
 	val, err := src.GetString()
 	if err != nil {
-		return err
+		return rc, err
 	}
-	for _, b := range []byte(strconv.Itoa(len(val))) {
-		dest.WriteByte(b)
-	}
-	dest.WriteByte(':')
-	for _, v := range []byte(val) {
-		dest.WriteByte(v)
-	}
+	rc = []byte(strconv.Itoa(len(val)))
 
-	return nil
+	rc = append(rc, ':')
+	rc = append(rc, []byte(val)...)
+
+	return rc, nil
 }
 
-func flattenList(src BnCode, dest io.ByteWriter) error {
+func flattenList(src BnCode) ([]byte, error) {
+	rc, tmp := []byte{}, []byte{}
 	if src.State != BnList {
-		return fmt.Errorf("Source object does not hold a list value")
+		return tmp, fmt.Errorf("Source object does not hold a list value")
 	}
 
 	val, err := src.GetList()
 	if err != nil {
-		return err
+		return tmp, err
 	}
 
-	dest.WriteByte('l')
+	rc = append(rc, 'l')
+	var enc []byte
 	for _, v := range val {
-		if err := Encode(v, dest); err != nil {
-			return err
+		if enc, err = Encode(v); err != nil {
+			return tmp, err
 		}
+		rc = append(rc, enc...)
 	}
 
-	dest.WriteByte('e')
+	rc = append(rc, 'e')
 
-	return nil
+	return rc, nil
 }
 
-func flattenDict(src BnCode, dest io.ByteWriter) error {
+func flattenDict(src BnCode) ([]byte, error) {
+	rc, emptyRc := []byte{}, []byte{}
 	if src.State != BnDict {
-		return fmt.Errorf("Source object does not hold a dictionary")
+		return emptyRc, fmt.Errorf("Source object does not hold a dictionary")
 	}
 
 	val, err := src.GetDict()
 	if err != nil {
-		return err
+		return emptyRc, err
 	}
 
 	// we need to insert the keys in the sorted order, hence
@@ -89,40 +91,39 @@ func flattenDict(src BnCode, dest io.ByteWriter) error {
 	}
 	sort.Strings(keys)
 
-	dest.WriteByte('d')
+	rc = append(rc, 'd')
 	for _, key := range keys {
 		v := val[key]
 		// encode the key by creating a tmp wrapper object
 		tmp := BnCode{State: BnString, Value: key}
-		flattenString(tmp, dest)
-		// insert the actual value
-		if err := Encode(v, dest); err != nil {
-			return err
-		}
-	}
-	dest.WriteByte('e')
+		enc, err := flattenString(tmp)
+		rc = append(rc, enc...)
 
-	return nil
+		// insert the actual value
+		if enc, err = Encode(v); err != nil {
+			return emptyRc, err
+		}
+		rc = append(rc, enc...)
+	}
+	rc = append(rc, 'e')
+
+	return rc, nil
 }
 
 // Encode attempts to flatten the src BnCode object into dest stream.
-// If error is encountered, the dest is left with whatever was flattened before the error.
-// Hence, it is caller's job to clean it up.
 //
 // Follows rules described here: https://en.wikipedia.org/wiki/Bencode
-func Encode(src BnCode, dest io.ByteWriter) error {
-	var err error = nil
+func Encode(src BnCode) ([]byte, error) {
 	switch src.State {
 	case BnInt:
-		err = flattenInt(src, dest)
+		return flattenInt(src)
 	case BnString:
-		err = flattenString(src, dest)
+		return flattenString(src)
 	case BnList:
-		err = flattenList(src, dest)
+		return flattenList(src)
 	case BnDict:
-		err = flattenDict(src, dest)
+		return flattenDict(src)
 	default:
-		err = fmt.Errorf("Unknown type encountered")
+		return []byte{}, fmt.Errorf("Unknown type encountered")
 	}
-	return err
 }
